@@ -1,7 +1,7 @@
 {
-  "version": "0.1-demo",
-  "trained": false,
-  "test_accuracy": "not yet trained",
+  "version": "1.0-20261106",
+  "trained": true,
+  "test_accuracy": "64.76%",
   "input": [
     224,
     224,
