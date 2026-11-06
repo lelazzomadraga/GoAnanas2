@@ -1,0 +1,32 @@
+name: Publish web dashboard
+
+on:
+  push:
+    paths: [ "web_dashboard/**", "**/web_dashboard/**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find the web_dashboard folder
+        run: |
+          DIR=$(find . -type d -name web_dashboard -not -path './.git/*' | head -n 1)
+          if [ -z "$DIR" ]; then echo "web_dashboard folder not found"; exit 1; fi
+          mkdir -p site && cp -r "$DIR"/. site/
+          ls -la site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
