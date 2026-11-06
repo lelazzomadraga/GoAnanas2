@@ -1,0 +1,60 @@
+name: Build Go Ananas! APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Installs Gradle directly, so the build works even if the gradlew files were not uploaded
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      # Finds the project folder (the one with settings.gradle.kts), even if it was uploaded inside a subfolder
+      - name: Find project folder
+        run: |
+          FILE=$(find . -name settings.gradle.kts -not -path './.git/*' | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "settings.gradle.kts was not found. Files in the repository:"; find . -maxdepth 3 -not -path './.git*'; exit 1
+          fi
+          DIR=$(dirname "$FILE")
+          echo "PROJECT_DIR=$DIR" >> "$GITHUB_ENV"
+          echo "Project folder: $DIR"
+          ls -la "$DIR" "$DIR/app" "$DIR/app/src/main/assets" || true
+
+      # Optional: save the content of google-services.json as a repository secret named
+      # GOOGLE_SERVICES_JSON to turn on cloud login, sync, and push notifications.
+      - name: Add Firebase config (optional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then echo "$GOOGLE_SERVICES_JSON" > "$PROJECT_DIR/app/google-services.json"; fi
+
+      - name: Build debug APK
+        run: |
+          cd "$PROJECT_DIR"
+          set -o pipefail
+          if ! gradle assembleDebug --no-daemon --console=plain 2>&1 | tee build.log; then
+            echo ""
+            echo "==================== SHORT ERROR SUMMARY ===================="
+            grep -E '^e: |error:|ERROR:|Duplicate class|AAPT|Could not|not found|Unresolved' build.log | head -40 || true
+            echo "-------------------------------------------------------------"
+            sed -n '/What went wrong/,/Try:/p' build.log | head -40
+            echo "============================================================="
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GoAnanas-debug-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
