@@ -1,0 +1,75 @@
+rules_version = '2';
+// Go Ananas! security rules: each role reaches only the records it needs.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function me() { return get(/databases/$(database)/documents/users/$(uid())).data; }
+    function exists_me() { return exists(/databases/$(database)/documents/users/$(uid())); }
+    function active() { return signedIn() && exists_me() && me().status == 'active'; }
+    function role() { return me().role; }
+    function isAdmin() { return active() && role() == 'admin'; }
+    function inFarm(farm) { return active() && me().farmCode == farm; }
+    function isStaff(farm) { return inFarm(farm) && (role() == 'owner' || role() == 'technician'); }
+    function isOwnerOf(farm) { return inFarm(farm) && role() == 'owner'; }
+    function onlyChanged(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+
+    // ---------------------------------------------------------------- users
+    match /users/{userId} {
+      allow read: if signedIn() && (uid() == userId || isAdmin()
+                  || (active() && resource.data.farmCode == me().farmCode));
+      // registration: owners are active; everybody else waits for the owner's approval; nobody registers as admin
+      allow create: if signedIn() && uid() == userId
+                  && request.resource.data.role in ['farmer', 'vendor', 'technician', 'owner']
+                  && ((request.resource.data.role == 'owner' && request.resource.data.status == 'active')
+                      || (request.resource.data.role != 'owner' && request.resource.data.status == 'pending'));
+      // own profile, without changing role, status, or farm
+      allow update: if (signedIn() && uid() == userId && onlyChanged(['name', 'gender', 'ageRange', 'yearsFarming', 'location', 'phone', 'language', 'photoUrl', 'lastSeen']))
+                  // the farm owner approves workers and sets their role (not owner or admin)
+                  || (isOwnerOf(resource.data.farmCode) && resource.data.role in ['farmer', 'vendor', 'technician']
+                      && onlyChanged(['status', 'role']) && request.resource.data.role in ['farmer', 'vendor', 'technician'])
+                  || isAdmin();
+      allow delete: if isAdmin();
+
+      // notifications: the owner reads and marks them; any active user may send one
+      match /inbox/{noteId} {
+        allow read, delete: if signedIn() && uid() == userId;
+        allow update: if signedIn() && uid() == userId && onlyChanged(['read']);
+        allow create: if active() || (signedIn() && exists_me() && me().status == 'pending');
+      }
+    }
+
+    // ---------------------------------------------------------------- farms
+    match /farms/{farm} {
+      allow read: if signedIn();   // registration checks that the farm code exists
+      allow create: if signedIn() && request.resource.data.ownerUid == uid() && !exists(/databases/$(database)/documents/farms/$(farm));
+      allow update: if isOwnerOf(farm) || isAdmin();
+
+      match /scans/{scanId} {
+        allow read: if isStaff(farm) || isAdmin() || (inFarm(farm) && resource.data.userId == uid());
+        allow create: if inFarm(farm) && request.resource.data.userId == uid();
+        allow update: if (inFarm(farm) && resource.data.userId == uid()) || isStaff(farm) || isAdmin();
+        allow delete: if (inFarm(farm) && resource.data.userId == uid()) || isAdmin();
+      }
+
+      match /announcements/{noteId} {
+        allow read: if inFarm(farm) || isAdmin();
+        allow create: if isStaff(farm) || isAdmin();
+        allow delete: if isAdmin() || isOwnerOf(farm);
+      }
+    }
+
+    // administrator view of every farm's scans (collection group query)
+    match /{path=**}/scans/{scanId} {
+      allow read: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------- dataset for retraining
+    match /dataset/{itemId} {
+      allow read: if active() && (role() == 'technician' || role() == 'admin' || role() == 'owner');
+      allow create, update: if active() && (role() == 'technician' || role() == 'admin');
+      allow delete: if active() && (role() == 'technician' || role() == 'admin');
+    }
+  }
+}

@@ -1,0 +1,7 @@
+fruit_rot
+healthy
+heart_rot
+mealybug_wilt
+multiple_crown_disorder
+not_pineapple
+root_rot

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Go Ananas! Farm Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234C9A2A' d='M12 1l1.6 5L12 5l-1.6 1z'/%3E%3Cellipse cx='12' cy='14' rx='5.4' ry='7' fill='%23F4B400'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="firebase-config.js" onerror="window.GO_ANANAS_FIREBASE=null"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <div class="login-card">
+    <div class="brand big"><span class="logo"></span><div><b>Go Ananas!</b><small data-t="tagline"></small></div></div>
+    <h2 data-t="signIn"></h2>
+    <p class="muted" data-t="signInHint"></p>
+    <label><span>E-mail</span><input id="email" type="email" autocomplete="username"></label>
+    <label><span data-t="password"></span><input id="password" type="password" autocomplete="current-password"></label>
+    <div class="err" id="loginErr"></div>
+    <button class="btn primary wide" id="loginBtn" data-t="signIn"></button>
+    <button class="link" id="resetBtn" data-t="forgot"></button>
+    <div class="langs"><button data-lang="en">English</button><button data-lang="tl">Tagalog</button></div>
+  </div>
+</div>
+
+<div id="app" class="layout" hidden>
+  <aside class="side" id="side">
+    <div class="brand"><span class="logo"></span><div><b>Go Ananas!</b><small id="farmLabel"></small></div></div>
+    <nav id="nav"></nav>
+    <div class="side-foot">
+      <div class="me"><img id="meAvatar" alt=""><div><b id="meName"></b><small id="meRole"></small></div></div>
+      <div class="langs small"><button data-lang="en">EN</button><button data-lang="tl">TL</button></div>
+      <button class="btn ghost wide" id="logoutBtn" data-t="logout"></button>
+    </div>
+  </aside>
+  <main>
+    <header class="top">
+      <button class="icon only-mobile" id="menuBtn" aria-label="Menu">☰</button>
+      <h1 id="pageTitle"></h1>
+      <span class="live" id="liveDot"><i></i><span data-t="live"></span></span>
+      <select id="demoRole" hidden title="Preview another role"></select>
+      <button class="icon bell" id="bellBtn" aria-label="Notifications">🔔<em id="bellCount" hidden></em></button>
+    </header>
+    <div class="banner" id="demoBanner" hidden data-t="demoBanner"></div>
+    <div class="banner warn" id="pendingBanner" hidden data-t="pendingBanner"></div>
+    <section id="view"></section>
+  </main>
+  <div class="drawer" id="inbox" hidden>
+    <div class="drawer-head"><b data-t="notifications"></b><button class="link" id="readAll" data-t="markAll"></button><button class="icon" id="closeInbox">✕</button></div>
+    <div id="inboxList"></div>
+  </div>
+</div>
+
+<dialog id="detail"><div id="detailBody"></div></dialog>
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

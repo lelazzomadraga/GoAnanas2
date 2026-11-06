@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- default profile picture: generic person silhouette -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp" android:height="96dp" android:viewportWidth="96" android:viewportHeight="96">
+    <path android:fillColor="#DDF0D3" android:pathData="M0,0h96v96h-96z" />
+    <path android:fillColor="#4C9A2A" android:pathData="M48,20 C56.8,20 64,27.2 64,36 C64,44.8 56.8,52 48,52 C39.2,52 32,44.8 32,36 C32,27.2 39.2,20 48,20 Z" />
+    <path android:fillColor="#4C9A2A" android:pathData="M16,96 C16,74 30,60 48,60 C66,60 80,74 80,96 Z" />
+</vector>
